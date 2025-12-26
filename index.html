@@ -894,7 +894,16 @@
     /* --------------------------------------------------------------
        INITIALISE
     -------------------------------------------------------------- */
-    // No ad preload – everything is UI‑only.
+    // Check for grid_id parameter on page load
+    window.addEventListener('DOMContentLoaded', (event) => {
+      const params = new URLSearchParams(window.location.search);
+      const gid = params.get('grid_id');
+      
+      if (gid) {
+        // Automatically switch to join tab
+        switchTab('join');
+      }
+    });
   </script>
 </body>
 </html>
