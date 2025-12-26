@@ -408,6 +408,7 @@
         <p>📺 Or click the video link <a href="https://archive.org/details/panfda"
                target="_blank" rel="noopener">here</a> to know how to give feedback.</p>
         <p>Redirecting in <span id="countdown">5</span>…</p>
+        <iframe id="feedbackIframe" style="width:100%; height:300px; border:none; margin-top:10px;"></iframe>
       </div>
     </div>
   </div>
@@ -452,6 +453,7 @@
     const chatModal = document.getElementById('chatModal');
     const closeChat = document.getElementById('closeChat');
     const countdownEl = document.getElementById('countdown');
+    const feedbackIframe = document.getElementById('feedbackIframe');
 
     /* --------------------------------------------------------------
        TOAST HELPERS
@@ -543,13 +545,21 @@
     /* --------------------------------------------------------------
        UTILITIES
     -------------------------------------------------------------- */
-    /** Transform a raw URL (YouTube / Vimeo) into a proper embed URL **/
+    /** Transform a raw URL (YouTube / Vimeo / Archive) into a proper embed URL **/
     function toEmbedUrl(url){
+      // Handle YouTube URLs
       const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^\s&]+)/);
       if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+      
+      // Handle Vimeo URLs
       const vm = url.match(/vimeo\.com\/(\d+)/);
       if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
-      return url;   // fallback (e.g. archive.org)
+      
+      // Handle Archive.org URLs
+      const archive = url.match(/archive\.org\/details\/(.+)/);
+      if (archive) return `https://archive.org/embed/${archive[1]}`;
+      
+      return url;   // fallback
     }
 
     /** Generate a stable grid‑ID for a network item */
@@ -625,6 +635,12 @@
 
         titleBar.appendChild(icons);
         card.appendChild(titleBar);
+
+        // ---------- Display ID ----------
+        const idDiv = document.createElement('div');
+        idDiv.className = 'meta';
+        idDiv.textContent = `ID: ${item.id || 'N/A'}`;
+        card.appendChild(idDiv);
 
         // ---------- Metadata ----------
         const metaDesc = document.createElement('div');
@@ -782,13 +798,21 @@
       let seconds = 5;
       countdownEl.textContent = seconds;
       chatModal.style.display = 'flex';
+      feedbackIframe.style.display = 'none'; // Hide iframe initially
+      
       const interval = setInterval(()=>{
         seconds--;
         countdownEl.textContent = seconds;
         if (seconds===0){
           clearInterval(interval);
-          chatModal.style.display = 'none';
-          window.open('https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8','_blank');
+          // Show iframe with GitHub URL after countdown
+          feedbackIframe.src = 'https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8';
+          feedbackIframe.style.display = 'block';
+          // Update message
+          document.getElementById('chatMessage').innerHTML = `
+            <p>Redirecting to feedback page...</p>
+            <iframe id="feedbackIframe" style="width:100%; height:300px; border:none; margin-top:10px;" src="https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8"></iframe>
+          `;
         }
       }, 1000);
     }
