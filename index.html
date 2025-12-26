@@ -44,6 +44,7 @@
       gap:20px;
     }
 
+    /* ---------- CARD (CREATE) ---------- */
     .card {
       flex:1;
       min-width:320px;
@@ -56,6 +57,19 @@
       transition:all .3s ease;
     }
     .card:hover{ transform:translateY(-3px); }
+
+    /* ---------- JOIN PANEL (FULL‑SCREEN) ---------- */
+    .join-panel {
+      position:fixed;
+      inset:0;
+      overflow-y:auto;
+      background:var(--bg);
+      border:none;
+      backdrop-filter:none;
+      border-radius:0;
+      padding:20px;
+      box-shadow:none;
+    }
 
     h1 { font-weight:700; margin-bottom:10px; }
     p.lead { color:var(--muted); margin-bottom:20px; }
@@ -118,6 +132,7 @@
       background:rgba(255,255,255,0.05);
     }
 
+    /* ---------- NETWORK LIST ---------- */
     .net-list{
       margin-top:10px;
       display:grid;
@@ -131,11 +146,94 @@
       padding:12px 14px;
       transition:.2s;
       white-space:pre-line;
+      position:relative;
     }
     .net-card:hover{ background:rgba(255,255,255,0.08); }
     .net-card .title{ font-weight:600; }
     .meta{ font-size:13px; color:var(--muted); margin-top:6px; }
 
+    .archive-embed{
+      margin-top:10px;
+    }
+    .archive-embed iframe{
+      width:100%;
+      height:180px;
+      border:none;
+      border-radius:8px;
+    }
+
+    .title-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .icon-btn{
+      background:none;
+      border:none;
+      color:var(--accent);
+      font-size:18px;
+      cursor:pointer;
+      margin-left:8px;
+      padding:0;
+    }
+    .icon-btn:hover{ opacity:0.8; }
+
+    /* ---------- SEARCH BAR ---------- */
+    .search-wrapper{ margin-bottom:12px; }
+    .search-container{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+    .search-container input{
+      flex:1;
+      min-width:150px;
+    }
+    .mode-selector{
+      position:relative;
+    }
+    .dropdown{
+      position:absolute;
+      top:100%;
+      right:0;
+      background:var(--card);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:8px;
+      padding:6px;
+      z-index:100;
+    }
+    .dropdown-item{
+      padding:4px 8px;
+      cursor:pointer;
+    }
+    .dropdown-item:hover{
+      background:rgba(255,255,255,0.1);
+    }
+
+    /* ---------- FOOTER ---------- */
+    .footer{
+      position:fixed;
+      bottom:10px;
+      left:0;
+      width:100%;
+      text-align:center;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    /* ---------- FLOATING CHAT ---------- */
+    .floating-chat{
+      position:fixed;
+      right:20px;
+      bottom:80px;
+      font-size:28px;
+      background:none;
+      border:none;
+      cursor:pointer;
+    }
+
+    /* ---------- TOAST ---------- */
     .toast{
       position:fixed;
       right:20px; bottom:20px;
@@ -145,6 +243,49 @@
       backdrop-filter:blur(5px);
       display:none;
       font-weight:500;
+    }
+
+    /* ---------- MODAL ---------- */
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.85);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:1000;
+    }
+    .modal-content{
+      position:relative;
+      width:95vw;
+      height:95vh;
+      background:#111;
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .close-modal{
+      position:absolute;
+      top:8px;
+      right:8px;
+      background:none;
+      border:none;
+      color:#fff;
+      font-size:20px;
+      cursor:pointer;
+    }
+
+    /* ---------- CHAT MODAL ---------- */
+    .chat-content{
+      width:auto;
+      max-width:500px;
+      height:auto;
+      padding:20px;
+      background:var(--card);
+      border-radius:12px;
+    }
+    .chat-content p{ margin:8px 0; }
+    .chat-content a{
+      color:var(--accent);
     }
 
     @media (max-width:700px){
@@ -160,7 +301,6 @@
       <h1>QuickNetwork</h1>
       <p class="lead">
         Create a short‑lived network or explore existing ones.
-        All metadata syncs with your backend in real time.
       </p>
 
       <div class="tabs">
@@ -200,6 +340,11 @@
           </div>
         </div>
 
+        <!-- NEW FIELD – Archive URL -->
+        <label>Archive URL <span style="color:var(--muted)">(optional)</span></label>
+        <input id="archive_url" type="url"
+               placeholder="https://archive.org/details/…">
+
         <label>Disappear Date <span style="color:var(--error)">*</span></label>
         <input id="disappear_date" type="date" required>
         <div style="font-size:13px;color:var(--muted)">
@@ -213,23 +358,69 @@
            style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
     </div>
 
-    <!-- JOIN PANEL -->
-    <div class="card" id="joinPanel" style="display:none">
+    <!-- JOIN PANEL (FULL‑SCREEN) -->
+    <div class="card join-panel" id="joinPanel" style="display:none">
       <button id="backBtn" class="btn back">← Back</button>
-      <h2 style="margin-top:0">Available Networks</h2>
+      <button id="searchBackBtn" class="btn back" style="display:none;">← Back</button>
+
+      <div class="search-wrapper">
+        <div class="search-container">
+          <input id="searchInput" type="text" placeholder="Search networks...">
+          <button id="searchBtn" class="btn primary">Search</button>
+
+          <div class="mode-selector">
+            <button id="modeToggle" class="btn">→</button>
+            <div id="modeDropdown" class="dropdown" style="display:none">
+              <div class="dropdown-item" data-mode="id">Search by ID</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="networks" class="net-list"></div>
       <div id="joinStatus"
            style="margin-top:8px;font-size:13px;color:var(--muted)"></div>
     </div>
   </div>
 
+  <footer class="footer">
+    © 2026 Quick Networkt· Built with ❤️ by YAN
+  </footer>
+
+  <button id="chatBtn" class="floating-chat">💬</button>
+
   <div id="toast" class="toast"></div>
+
+  <!-- Fullscreen embed modal -->
+  <div id="fullscreenModal" class="modal">
+    <div class="modal-content">
+      <button id="closeFullscreen" class="close-modal">✖</button>
+      <iframe id="fullscreenIframe" src="" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- Chat / Feedback modal -->
+  <div id="chatModal" class="modal">
+    <div class="modal-content chat-content">
+      <button id="closeChat" class="close-modal">✖</button>
+      <div id="chatMessage">
+        <p>🔐 Login or sign up with GitHub to give the feedback.</p>
+        <p>📺 Or click the video link <a href="https://archive.org/details/panfda"
+               target="_blank" rel="noopener">here</a> to know how to give feedback.</p>
+        <p>Redirecting in <span id="countdown">5</span>…</p>
+      </div>
+    </div>
+  </div>
 
   <script>
     /* --------------------------------------------------------------
        CONFIG & GLOBALS
-       -------------------------------------------------------------- */
+    -------------------------------------------------------------- */
     const BACKEND = 'https://network_metadata_backend.ecethre.workers.dev';
+    const SHARE_BASE = 'https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/quick-network-page-shared-links-redirecting.html';
+    let cachedNetworks = null;
+    let searchMode = 'name';          // name (default) or id
+    let isSearching = false;
 
     const today = new Date();
     const max   = new Date(); max.setDate(today.getDate() + 10);
@@ -247,12 +438,37 @@
     const createForm  = document.getElementById('createForm');
     const toast       = document.getElementById('toast');
 
-    let cachedNetworks = null;
-    let pendingLink = null;      // <-- stores a link that must open after ad
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn   = document.getElementById('searchBtn');
+    const searchBackBtn = document.getElementById('searchBackBtn');
+    const modeToggle  = document.getElementById('modeToggle');
+    const modeDropdown = document.getElementById('modeDropdown');
+
+    const fullscreenModal = document.getElementById('fullscreenModal');
+    const fullscreenIframe = document.getElementById('fullscreenIframe');
+    const closeFullscreen = document.getElementById('closeFullscreen');
+
+    const chatBtn = document.getElementById('chatBtn');
+    const chatModal = document.getElementById('chatModal');
+    const closeChat = document.getElementById('closeChat');
+    const countdownEl = document.getElementById('countdown');
+
+    /* --------------------------------------------------------------
+       TOAST HELPERS
+    -------------------------------------------------------------- */
+    let toastTimeout;
+    function showToast(msg, err = false){
+      toast.style.display = 'block';
+      toast.textContent = msg;
+      toast.style.background = err ?
+        'rgba(239,68,68,0.7)' : 'rgba(16,185,129,0.7)';
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(()=> toast.style.display='none', 3500);
+    }
 
     /* --------------------------------------------------------------
        TAB SWITCHING
-       -------------------------------------------------------------- */
+    -------------------------------------------------------------- */
     tabCreate.onclick = () => switchTab('create');
     tabJoin.onclick   = () => switchTab('join');
     backBtn.onclick   = () => switchTab('create');
@@ -273,36 +489,11 @@
     }
 
     /* --------------------------------------------------------------
-       TOAST HELPERS
-       -------------------------------------------------------------- */
-    let toastTimeout;
-    function showToast(msg, err = false){
-      toast.style.display = 'block';
-      toast.textContent = msg;
-      toast.style.background = err ?
-        'rgba(239,68,68,0.7)' : 'rgba(16,185,129,0.7)';
-      clearTimeout(toastTimeout);
-      toastTimeout = setTimeout(()=> toast.style.display='none', 3500);
-    }
-
-    /* --------------------------------------------------------------
-       ANDROID BRIDGE WRAPPER
-       -------------------------------------------------------------- */
-    function requestAd(target){
-      if (window.Android && typeof Android.requestRewardedAd === 'function') {
-        Android.requestRewardedAd(target);
-      } else {
-        console.warn('Android interface not available – ad ignored');
-      }
-    }
-
-    /* --------------------------------------------------------------
-       CREATE NETWORK – POST + REWARDED AD
-       -------------------------------------------------------------- */
+       CREATE NETWORK – POST (includes archive_url)
+    -------------------------------------------------------------- */
     createForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // double‑check required fields (HTML already validates)
       if (!network_name.value.trim() ||
           !description.value.trim() ||
           !phone1.value.trim() ||
@@ -319,6 +510,7 @@
         phone_number_2: phone2.value.trim() || null,
         link_1:         link1.value.trim(),
         link_2:         link2.value.trim() || null,
+        archive_url:    archive_url.value.trim() || null,
         disappear_date: disappear_date.value
       };
 
@@ -334,12 +526,9 @@
         const json = await res.json();
         if (json.success) {
           showToast('Network created ✓');
-          // ---- SHOW REWARDED AD ----
-          requestAd('createNetwork');   // tag; no URL needed
-          // reset UI
           createForm.reset();
           dateInput.value = toISO(today);
-          cachedNetworks = null;          // force refresh on Join tab
+          cachedNetworks = null;               // force refresh when opening Join
           document.getElementById('createStatus').textContent = 'Posted successfully.';
         } else {
           showToast(json.error || 'Error posting', true);
@@ -352,50 +541,166 @@
     });
 
     /* --------------------------------------------------------------
-       JOIN NETWORK – LIST + LINK‑CLICK REWARDED AD
-       -------------------------------------------------------------- */
-    async function loadNetworks(){
-      const status = document.getElementById('joinStatus');
+       UTILITIES
+    -------------------------------------------------------------- */
+    /** Transform a raw URL (YouTube / Vimeo) into a proper embed URL **/
+    function toEmbedUrl(url){
+      const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^\s&]+)/);
+      if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+      const vm = url.match(/vimeo\.com\/(\d+)/);
+      if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+      return url;   // fallback (e.g. archive.org)
+    }
+
+    /** Generate a stable grid‑ID for a network item */
+    function getGridId(item, idx){
+      return (item.id || idx).toString();
+    }
+
+    /* --------------------------------------------------------------
+       RENDER NETWORK LIST
+    -------------------------------------------------------------- */
+    function renderNetworks(list){
       const container = document.getElementById('networks');
       container.innerHTML = '';
-      status.textContent = 'Loading...';
+      if (!list.length){
+        document.getElementById('joinStatus').textContent = 'No networks found.';
+        return;
+      }
+      list.forEach((item, idx) => {
+        const gridId = getGridId(item, idx);
+        const card = document.createElement('div');
+        card.className = 'net-card';
+        card.id = `grid-${gridId}`;
 
+        // ---------- Archive embed (if any) ----------
+        if (item.archive_url){
+          const embedDiv = document.createElement('div');
+          embedDiv.className = 'archive-embed';
+          embedDiv.innerHTML = `<iframe src="${toEmbedUrl(item.archive_url)}" allowfullscreen></iframe>`;
+          card.appendChild(embedDiv);
+        }
+
+        // ---------- Title + icons ----------
+        const titleBar = document.createElement('div');
+        titleBar.className = 'title-bar';
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = item.network_name || '(no name)';
+        titleBar.appendChild(title);
+
+        const icons = document.createElement('div');
+
+        // Fullscreen icon
+        const fsBtn = document.createElement('button');
+        fsBtn.className = 'icon-btn';
+        fsBtn.title = 'Fullscreen';
+        fsBtn.innerHTML = '⛶';
+        fsBtn.onclick = () => {
+          if (!item.archive_url){
+            showToast('No archive URL to show', true);
+            return;
+          }
+          openFullscreen(item.archive_url);
+        };
+        icons.appendChild(fsBtn);
+
+        // Share icon
+        const shareBtn = document.createElement('button');
+        shareBtn.className = 'icon-btn';
+        shareBtn.title = 'Share';
+        shareBtn.innerHTML = '🔗';
+        shareBtn.onclick = () => {
+          const link = `${SHARE_BASE}?grid_id=${gridId}`;
+          // copy to clipboard
+          navigator.clipboard.writeText(link).then(()=>{
+            showToast('Share link copied');
+          }).catch(()=>showToast('Copy failed', true));
+          // also try native share if available
+          if (navigator.share){
+            navigator.share({title: item.network_name, url: link}).catch(()=>{/* ignore */});
+          }
+        };
+        icons.appendChild(shareBtn);
+
+        titleBar.appendChild(icons);
+        card.appendChild(titleBar);
+
+        // ---------- Metadata ----------
+        const metaDesc = document.createElement('div');
+        metaDesc.className = 'meta';
+        metaDesc.innerHTML = item.description ? item.description.replace(/\n/g,'<br>') : '';
+        card.appendChild(metaDesc);
+
+        const metaDisappear = document.createElement('div');
+        metaDisappear.className = 'meta';
+        metaDisappear.textContent = `Disappear: ${item.disappear_date || '-'}`;
+        card.appendChild(metaDisappear);
+
+        const metaPhone1 = document.createElement('div');
+        metaPhone1.className = 'meta';
+        metaPhone1.textContent = `Phone 1: ${item.phone_number_1 || '-'}`;
+        card.appendChild(metaPhone1);
+
+        if (item.phone_number_2){
+          const metaPhone2 = document.createElement('div');
+          metaPhone2.className = 'meta';
+          metaPhone2.textContent = `Phone 2: ${item.phone_number_2}`;
+          card.appendChild(metaPhone2);
+        }
+
+        if (item.link_1){
+          const link1 = document.createElement('a');
+          link1.href = item.link_1;
+          link1.target = '_blank';
+          link1.style.color = 'var(--accent)';
+          link1.textContent = 'Link 1';
+          card.appendChild(link1);
+        }
+        if (item.link_2){
+          const br = document.createElement('br');
+          card.appendChild(br);
+          const link2 = document.createElement('a');
+          link2.href = item.link_2;
+          link2.target = '_blank';
+          link2.style.color = 'var(--accent)';
+          link2.textContent = 'Link 2';
+          card.appendChild(link2);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    /* --------------------------------------------------------------
+       FETCH & DISPLAY NETWORKS
+    -------------------------------------------------------------- */
+    async function loadNetworks(){
+      const status = document.getElementById('joinStatus');
+      status.textContent = 'Loading...';
       try {
-        if (!cachedNetworks) {
+        if (!cachedNetworks){
           const res = await fetch(`${BACKEND}/list`);
           cachedNetworks = await res.json();
         }
-
-        if (!cachedNetworks.length) {
-          status.textContent = 'No networks found.';
-          return;
-        }
         status.textContent = '';
+        renderNetworks(cachedNetworks);
 
-        cachedNetworks.forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'net-card';
-          div.innerHTML = `
-            <div class="title">${item.network_name || '(no name)'}</div>
-            <div class="meta">${item.description ? item.description.replace(/\n/g,'<br>') : ''}</div>
-            <div class="meta">Disappear: ${item.disappear_date || '-'}</div>
-            <div class="meta">Phone 1: ${item.phone_number_1 || '-'}</div>
-            ${item.phone_number_2 ? `<div class="meta">Phone 2: ${item.phone_number_2}</div>` : ''}
-            ${item.link_1 ? `<a href="${item.link_1}" target="_blank" style="color:var(--accent)">Link 1</a>` : ''}
-            ${item.link_2 ? `<br><a href="${item.link_2}" target="_blank" style="color:var(--accent)">Link 2</a>` : ''}
-          `;
-          container.appendChild(div);
-
-          // Attach click‑handler to every link inside this card
-          div.querySelectorAll('a').forEach(a => {
-            a.addEventListener('click', ev => {
-              ev.preventDefault();            // stop immediate navigation
-              pendingLink = a.href;            // remember what must open after ad
-              requestAd(a.href);               // trigger rewarded ad
-            });
-          });
-        });
-      } catch (err) {
+        // ----- focus on a grid_id if present in URL -----
+        const params = new URLSearchParams(window.location.search);
+        const gid = params.get('grid_id');
+        if (gid){
+          // wait a bit for DOM to settle
+          setTimeout(()=>{
+            const el = document.getElementById(`grid-${gid}`);
+            if (el){
+              el.scrollIntoView({behavior:'smooth', block:'center'});
+              el.style.boxShadow = `0 0 10px 3px var(--accent)`;
+              setTimeout(()=> el.style.boxShadow='', 3000);
+            }
+          }, 300);
+        }
+      } catch(err){
         console.error(err);
         status.textContent = 'Error loading networks.';
         showToast('Failed to load networks', true);
@@ -403,34 +708,98 @@
     }
 
     /* --------------------------------------------------------------
-       AD CALLBACKS – called from native code
-       -------------------------------------------------------------- */
-    function onAdPreloaded()          { console.log('✅ Ad pre‑loaded'); }
-    function onAdFailedToPreload()    { console.warn('⚠️ Ad preload failed'); }
-    function onAdNotAvailable()       { showToast('Rewarded ad not available', true); }
-
-    function onAdCompleted(target) {
-      console.log('✅ Ad completed – target:', target);
-      // If we have a pending link (i.e. user clicked a link in the list) open it.
-      // Otherwise, if the target itself looks like a URL (e.g. future use), open it.
-      const urlToOpen = pendingLink || (typeof target === 'string' && target.startsWith('http') ? target : null);
-      if (urlToOpen) {
-        // navigate in the same tab – works without popup blockers
-        window.location.href = urlToOpen;
-      } else {
-        // No URL to open – just give a reward toast
-        showToast('Reward earned');
-      }
-      // clear pending for next click
-      pendingLink = null;
+       FULLSCREEN MODAL
+    -------------------------------------------------------------- */
+    function openFullscreen(url){
+      fullscreenIframe.src = toEmbedUrl(url);
+      fullscreenModal.style.display = 'flex';
     }
+    function closeFullscreenModal(){
+      fullscreenIframe.src = '';
+      fullscreenModal.style.display = 'none';
+    }
+    closeFullscreen.addEventListener('click', closeFullscreenModal);
+    fullscreenModal.addEventListener('click', (e)=>{
+      if (e.target===fullscreenModal) closeFullscreenModal();
+    });
 
     /* --------------------------------------------------------------
-       INITIALISE – preload first ad (Android only)
-       -------------------------------------------------------------- */
-    if (window.Android && typeof Android.preloadRewardedAd === 'function') {
-      Android.preloadRewardedAd();
+       SEARCH LOGIC
+    -------------------------------------------------------------- */
+    function performSearch(){
+      const query = searchInput.value.trim();
+      if (!query){
+        renderNetworks(cachedNetworks);
+        return;
+      }
+      let results;
+      if (searchMode === 'name'){
+        const lc = query.toLowerCase();
+        results = cachedNetworks.filter(item => (item.network_name||'').toLowerCase().includes(lc));
+      }else{ // id
+        results = cachedNetworks.filter(item => (item.id && item.id.toString()===query));
+      }
+      renderNetworks(results);
+      searchBackBtn.style.display = 'inline-block';
+      isSearching = true;
     }
+    function resetSearch(){
+      searchInput.value = '';
+      renderNetworks(cachedNetworks);
+      searchBackBtn.style.display = 'none';
+      isSearching = false;
+    }
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e)=>{ if(e.key==='Enter') performSearch(); });
+    searchBackBtn.addEventListener('click', resetSearch);
+
+    // ---- mode selector ----
+    modeToggle.addEventListener('click', () => {
+      modeDropdown.style.display = modeDropdown.style.display === 'none' ? 'block' : 'none';
+    });
+    modeDropdown.addEventListener('click', (e)=>{
+      if (e.target.classList.contains('dropdown-item')){
+        const mode = e.target.dataset.mode;
+        if (mode === 'id'){
+          searchMode = 'id';
+          modeToggle.textContent = 'ID';
+          searchInput.placeholder = 'Enter ID...';
+        }
+        modeDropdown.style.display = 'none';
+      }
+    });
+    // close dropdown when clicking outside
+    document.addEventListener('click', (e)=>{
+      if (!modeToggle.contains(e.target) && !modeDropdown.contains(e.target)){
+        modeDropdown.style.display = 'none';
+      }
+    });
+
+    /* --------------------------------------------------------------
+       CHAT / FEEDBACK MODAL
+    -------------------------------------------------------------- */
+    function startChatCountdown(){
+      let seconds = 5;
+      countdownEl.textContent = seconds;
+      chatModal.style.display = 'flex';
+      const interval = setInterval(()=>{
+        seconds--;
+        countdownEl.textContent = seconds;
+        if (seconds===0){
+          clearInterval(interval);
+          chatModal.style.display = 'none';
+          window.open('https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8','_blank');
+        }
+      }, 1000);
+    }
+    chatBtn.addEventListener('click', startChatCountdown);
+    closeChat.addEventListener('click', ()=> chatModal.style.display='none');
+    chatModal.addEventListener('click', (e)=>{ if (e.target===chatModal) chatModal.style.display='none'; });
+
+    /* --------------------------------------------------------------
+       INITIALISE
+    -------------------------------------------------------------- */
+    // No ad preload – everything is UI‑only.
   </script>
 </body>
 </html>
