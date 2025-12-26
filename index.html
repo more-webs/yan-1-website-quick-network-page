@@ -154,6 +154,16 @@
 
     .archive-embed{
       margin-top:10px;
+      width: 100%;
+    }
+    .archive-embed img,
+    .archive-embed video,
+    .archive-embed audio {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      max-height: 200px;
+      object-fit: cover;
     }
     .archive-embed iframe{
       width:100%;
@@ -249,7 +259,7 @@
     .modal{
       position:fixed;
       inset:0;
-      background:rgba(0,0,0,0.85);
+      background:rgba(0,0,0,0.9);
       display:none;
       justify-content:center;
       align-items:center;
@@ -257,21 +267,22 @@
     }
     .modal-content{
       position:relative;
-      width:95vw;
-      height:95vh;
+      width:100%;
+      height:100%;
       background:#111;
-      border-radius:12px;
+      border-radius:0;
       overflow:hidden;
     }
     .close-modal{
       position:absolute;
-      top:8px;
-      right:8px;
+      top:15px;
+      right:15px;
       background:none;
       border:none;
       color:#fff;
-      font-size:20px;
+      font-size:24px;
       cursor:pointer;
+      z-index: 1001;
     }
 
     /* ---------- CHAT MODAL ---------- */
@@ -395,7 +406,9 @@
   <div id="fullscreenModal" class="modal">
     <div class="modal-content">
       <button id="closeFullscreen" class="close-modal">✖</button>
-      <iframe id="fullscreenIframe" src="" allowfullscreen></iframe>
+      <div id="fullscreenContent" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;">
+        <!-- Content will be dynamically inserted here -->
+      </div>
     </div>
   </div>
 
@@ -408,7 +421,6 @@
         <p>📺 Or click the video link <a href="https://archive.org/details/panfda"
                target="_blank" rel="noopener">here</a> to know how to give feedback.</p>
         <p>Redirecting in <span id="countdown">5</span>…</p>
-        <iframe id="feedbackIframe" style="width:100%; height:300px; border:none; margin-top:10px;"></iframe>
       </div>
     </div>
   </div>
@@ -446,14 +458,13 @@
     const modeDropdown = document.getElementById('modeDropdown');
 
     const fullscreenModal = document.getElementById('fullscreenModal');
-    const fullscreenIframe = document.getElementById('fullscreenIframe');
+    const fullscreenContent = document.getElementById('fullscreenContent');
     const closeFullscreen = document.getElementById('closeFullscreen');
 
     const chatBtn = document.getElementById('chatBtn');
     const chatModal = document.getElementById('chatModal');
     const closeChat = document.getElementById('closeChat');
     const countdownEl = document.getElementById('countdown');
-    const feedbackIframe = document.getElementById('feedbackIframe');
 
     /* --------------------------------------------------------------
        TOAST HELPERS
@@ -567,17 +578,61 @@
       return (item.id || idx).toString();
     }
 
+    /** Check if URL is an image */
+    function isImage(url) {
+      return /\.(jpeg|jpg|png|gif|webp)$/i.test(url);
+    }
+
+    /** Check if URL is a video */
+    function isVideo(url) {
+      return /\.(mp4|webm|ogg|mov)$/i.test(url);
+    }
+
+    /** Check if URL is audio */
+    function isAudio(url) {
+      return /\.(mp3|wav|ogg|aac)$/i.test(url);
+    }
+
+    /** Create appropriate media element */
+    function createMediaElement(url) {
+      if (isImage(url)) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'Network media';
+        return img;
+      } else if (isVideo(url)) {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.src = url;
+        return video;
+      } else if (isAudio(url)) {
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        audio.src = url;
+        return audio;
+      } else {
+        // For iframe content (YouTube, Vimeo, Archive.org)
+        const iframe = document.createElement('iframe');
+        iframe.src = toEmbedUrl(url);
+        iframe.allowFullscreen = true;
+        return iframe;
+      }
+    }
+
     /* --------------------------------------------------------------
        RENDER NETWORK LIST
     -------------------------------------------------------------- */
     function renderNetworks(list){
+      // Shuffle the list randomly
+      const shuffledList = [...list].sort(() => Math.random() - 0.5);
+      
       const container = document.getElementById('networks');
       container.innerHTML = '';
-      if (!list.length){
+      if (!shuffledList.length){
         document.getElementById('joinStatus').textContent = 'No networks found.';
         return;
       }
-      list.forEach((item, idx) => {
+      shuffledList.forEach((item, idx) => {
         const gridId = getGridId(item, idx);
         const card = document.createElement('div');
         card.className = 'net-card';
@@ -587,7 +642,7 @@
         if (item.archive_url){
           const embedDiv = document.createElement('div');
           embedDiv.className = 'archive-embed';
-          embedDiv.innerHTML = `<iframe src="${toEmbedUrl(item.archive_url)}" allowfullscreen></iframe>`;
+          embedDiv.appendChild(createMediaElement(item.archive_url));
           card.appendChild(embedDiv);
         }
 
@@ -727,11 +782,33 @@
        FULLSCREEN MODAL
     -------------------------------------------------------------- */
     function openFullscreen(url){
-      fullscreenIframe.src = toEmbedUrl(url);
+      fullscreenContent.innerHTML = '';
+      
+      if (isImage(url) || isVideo(url) || isAudio(url)) {
+        // For media files, create the element directly
+        const mediaElement = createMediaElement(url);
+        mediaElement.style.maxWidth = '90vw';
+        mediaElement.style.maxHeight = '90vh';
+        if (isVideo(url) || isAudio(url)) {
+          mediaElement.style.width = '90vw';
+          mediaElement.style.height = isVideo(url) ? 'auto' : '50px';
+        }
+        fullscreenContent.appendChild(mediaElement);
+      } else {
+        // For iframe content (YouTube, Vimeo, Archive.org)
+        const iframe = document.createElement('iframe');
+        iframe.src = toEmbedUrl(url);
+        iframe.allowFullscreen = true;
+        iframe.style.width = '90vw';
+        iframe.style.height = '90vh';
+        iframe.style.border = 'none';
+        fullscreenContent.appendChild(iframe);
+      }
+      
       fullscreenModal.style.display = 'flex';
     }
     function closeFullscreenModal(){
-      fullscreenIframe.src = '';
+      fullscreenContent.innerHTML = '';
       fullscreenModal.style.display = 'none';
     }
     closeFullscreen.addEventListener('click', closeFullscreenModal);
@@ -798,21 +875,15 @@
       let seconds = 5;
       countdownEl.textContent = seconds;
       chatModal.style.display = 'flex';
-      feedbackIframe.style.display = 'none'; // Hide iframe initially
       
       const interval = setInterval(()=>{
         seconds--;
         countdownEl.textContent = seconds;
         if (seconds===0){
           clearInterval(interval);
-          // Show iframe with GitHub URL after countdown
-          feedbackIframe.src = 'https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8';
-          feedbackIframe.style.display = 'block';
-          // Update message
-          document.getElementById('chatMessage').innerHTML = `
-            <p>Redirecting to feedback page...</p>
-            <iframe id="feedbackIframe" style="width:100%; height:300px; border:none; margin-top:10px;" src="https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8"></iframe>
-          `;
+          // Open URL in new tab after countdown
+          window.open('https://github.com/OpenThoughtVoice/OpenThoughtVoice/discussions/8', '_blank');
+          chatModal.style.display = 'none';
         }
       }, 1000);
     }
